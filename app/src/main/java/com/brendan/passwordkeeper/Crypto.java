@@ -37,7 +37,7 @@ public class Crypto {
     private static byte[] IV = Generate128BitsOfRandomEntropy();
     private static String PASSWORD = GlobalVars.passKey;
     private static byte[] SALT = Generate128BitsOfRandomEntropy();
-
+    private static int iterations = 65536;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static String Encrypt(String plainText) throws Exception {
@@ -85,7 +85,7 @@ public class Crypto {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         byte[] salt = SALT;
 
-        KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, 65536, 128);
+        KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, iterations, 128);
         SecretKey scrtKey = factory.generateSecret(spec);
         byte[] encoded = scrtKey.getEncoded();
         SecretKeySpec finalKeySpec = new SecretKeySpec(encoded, "AES");
@@ -101,7 +101,7 @@ public class Crypto {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         byte[] salt = saltBytes;
 
-        KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, 65536, 128);
+        KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, iterations, 128);
         SecretKey scrtKey = factory.generateSecret(spec);
         byte[] encoded = scrtKey.getEncoded();
         SecretKeySpec finalKeySpec = new SecretKeySpec(encoded, "AES");
@@ -149,5 +149,52 @@ public class Crypto {
             resultIndexCount++;
         }
         return result;
+    }
+
+    public static byte[] getSalt() throws NoSuchAlgorithmException {
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+
+        byte[] salt = new byte[16];
+        sr.nextBytes(salt);
+        return salt;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String hash(String plainPass) throws NoSuchAlgorithmException, InvalidKeySpecException {
+
+        char[] passChars = plainPass.toCharArray();
+        byte[] salt = getSalt();
+
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec spec = new PBEKeySpec(passChars, salt, iterations, 64 * 8);
+        byte[] hash = factory.generateSecret(spec).getEncoded();
+        String saltStr = Base64.getEncoder().withoutPadding().encodeToString(salt);
+        String hashStr = Base64.getEncoder().withoutPadding().encodeToString(hash);
+
+        return saltStr + hashStr;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String hash(String plainPass, String salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        char[] passChars = plainPass.toCharArray();
+        byte[] saltChars = Base64.getDecoder().decode(salt);
+
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec spec = new PBEKeySpec(passChars, saltChars, iterations, 64 * 8);
+        byte[] hash = factory.generateSecret(spec).getEncoded();
+
+        String saltStr = Base64.getEncoder().withoutPadding().encodeToString(saltChars);
+        String hashStr = Base64.getEncoder().withoutPadding().encodeToString(hash);
+
+
+        return saltStr + hashStr;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static boolean compareHash(String plainPass, String hashPass) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String splitHash = hashPass.substring(0, 22);
+
+
+        return hash(plainPass, splitHash).equals(hashPass);
     }
 }

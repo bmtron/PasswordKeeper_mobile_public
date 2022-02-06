@@ -4,6 +4,8 @@ import android.os.AsyncTask;
 
 import com.brendan.passwordkeeper.Globals.GlobalVars;
 
+import org.bouncycastle.crypto.generators.BCrypt;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.*;
+
 
 public class LoginsAsync implements Runnable {
     String url;
@@ -25,6 +28,7 @@ public class LoginsAsync implements Runnable {
         this.url = url;
         this.authKey = authKey;
         this.latch = latch;
+
     }
     @Override
     public void run() {
